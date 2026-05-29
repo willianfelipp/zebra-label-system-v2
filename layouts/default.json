@@ -1,0 +1,19 @@
+{
+    "name": "Default",
+    "width_mm": 100,
+    "height_mm": 60,
+    "fields": [
+        {
+            "type": "text",
+            "field": "material_code",
+            "x": 10,
+            "y": 10
+        },
+        {
+            "type": "text",
+            "field": "quantity",
+            "x": 10,
+            "y": 30
+        }
+    ]
+}
