@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.importers.excel_importer import ExcelImporter
+from app.processors.data_normalizer import DataNormalizer
 
 
 class MainWindow(QMainWindow):
@@ -24,7 +25,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Zebra Label System V2")
         self.resize(1400, 900)
 
+        # =========================
+        # DATA
+        # =========================
+
         self.df = None
+        self.normalized_data = []
+
+        # =========================
+        # INIT UI
+        # =========================
 
         self.setup_ui()
 
@@ -71,9 +81,30 @@ class MainWindow(QMainWindow):
         self.import_button = QPushButton("Importar Excel")
 
         self.import_button.setFixedHeight(40)
+
         self.import_button.setCursor(
             Qt.CursorShape.PointingHandCursor
         )
+
+        self.import_button.setStyleSheet("""
+            QPushButton {
+                background-color: #0078d7;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 15px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+
+            QPushButton:hover {
+                background-color: #2893ff;
+            }
+
+            QPushButton:pressed {
+                background-color: #005a9e;
+            }
+        """)
 
         self.import_button.clicked.connect(
             self.import_excel
@@ -96,7 +127,7 @@ class MainWindow(QMainWindow):
         # =========================
 
         sidebar = QFrame()
-        sidebar.setFixedWidth(280)
+        sidebar.setFixedWidth(300)
 
         sidebar.setStyleSheet("""
             background-color: #f3f3f3;
@@ -105,6 +136,7 @@ class MainWindow(QMainWindow):
 
         sidebar_layout = QVBoxLayout()
         sidebar_layout.setContentsMargins(15, 15, 15, 15)
+        sidebar_layout.setSpacing(15)
 
         sidebar.setLayout(sidebar_layout)
 
@@ -113,16 +145,20 @@ class MainWindow(QMainWindow):
         sidebar_title.setStyleSheet("""
             font-size: 18px;
             font-weight: bold;
-            padding-bottom: 10px;
+            padding-bottom: 5px;
         """)
 
-        self.file_name_label = QLabel("Arquivo: Nenhum")
+        # =========================
+        # FILE INFO
+        # =========================
+
+        self.file_name_label = QLabel("Arquivo:\nNenhum arquivo carregado")
 
         self.file_name_label.setWordWrap(True)
 
         self.file_name_label.setStyleSheet("""
             font-size: 13px;
-            padding: 8px;
+            padding: 10px;
             background-color: white;
             border: 1px solid #ccc;
             border-radius: 6px;
@@ -132,15 +168,30 @@ class MainWindow(QMainWindow):
 
         self.total_rows_label.setStyleSheet("""
             font-size: 13px;
-            padding: 8px;
+            padding: 10px;
             background-color: white;
             border: 1px solid #ccc;
             border-radius: 6px;
         """)
 
+        self.preview_count_label = QLabel("Previews: 0")
+
+        self.preview_count_label.setStyleSheet("""
+            font-size: 13px;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        """)
+
+        # =========================
+        # SIDEBAR ADD
+        # =========================
+
         sidebar_layout.addWidget(sidebar_title)
         sidebar_layout.addWidget(self.file_name_label)
         sidebar_layout.addWidget(self.total_rows_label)
+        sidebar_layout.addWidget(self.preview_count_label)
         sidebar_layout.addStretch()
 
         # =========================
@@ -155,6 +206,7 @@ class MainWindow(QMainWindow):
 
         preview_layout = QVBoxLayout()
         preview_layout.setContentsMargins(15, 15, 15, 15)
+        preview_layout.setSpacing(15)
 
         preview_container.setLayout(preview_layout)
 
@@ -163,21 +215,32 @@ class MainWindow(QMainWindow):
         preview_title.setStyleSheet("""
             font-size: 20px;
             font-weight: bold;
-            padding-bottom: 10px;
         """)
 
+        # =========================
+        # SCROLL AREA
+        # =========================
+
         self.scroll_area = QScrollArea()
+
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
+        self.scroll_area.setFrameShape(
+            QFrame.Shape.NoFrame
+        )
 
         self.scroll_content = QWidget()
 
         self.scroll_layout = QVBoxLayout()
         self.scroll_layout.setSpacing(15)
 
-        self.scroll_content.setLayout(self.scroll_layout)
+        self.scroll_content.setLayout(
+            self.scroll_layout
+        )
 
-        self.scroll_area.setWidget(self.scroll_content)
+        self.scroll_area.setWidget(
+            self.scroll_content
+        )
 
         preview_layout.addWidget(preview_title)
         preview_layout.addWidget(self.scroll_area)
@@ -201,7 +264,10 @@ class MainWindow(QMainWindow):
         # =========================
 
         status_bar = QStatusBar()
-        status_bar.showMessage("Sistema iniciado")
+
+        status_bar.showMessage(
+            "Sistema iniciado"
+        )
 
         self.setStatusBar(status_bar)
 
@@ -210,6 +276,10 @@ class MainWindow(QMainWindow):
         # =========================
 
         self.create_mock_previews()
+
+    # =====================================================
+    # MOCK PREVIEWS
+    # =====================================================
 
     def create_mock_previews(self):
 
@@ -223,9 +293,15 @@ class MainWindow(QMainWindow):
                 quantity="5"
             )
 
-            self.scroll_layout.addWidget(preview_card)
+            self.scroll_layout.addWidget(
+                preview_card
+            )
 
         self.scroll_layout.addStretch()
+
+    # =====================================================
+    # CREATE PREVIEW CARD
+    # =====================================================
 
     def create_preview_card(
         self,
@@ -245,9 +321,18 @@ class MainWindow(QMainWindow):
         """)
 
         card_layout = QVBoxLayout()
-        card_layout.setContentsMargins(15, 15, 15, 15)
+        card_layout.setContentsMargins(
+            15,
+            15,
+            15,
+            15
+        )
 
         preview_card.setLayout(card_layout)
+
+        # =========================
+        # TITLE
+        # =========================
 
         card_title = QLabel(title)
 
@@ -255,6 +340,10 @@ class MainWindow(QMainWindow):
             font-size: 16px;
             font-weight: bold;
         """)
+
+        # =========================
+        # INFO
+        # =========================
 
         card_info = QLabel(
             f"Material: {material}\n"
@@ -265,12 +354,22 @@ class MainWindow(QMainWindow):
             font-size: 14px;
         """)
 
+        card_info.setWordWrap(True)
+
+        # =========================
+        # ADD LAYOUT
+        # =========================
+
         card_layout.addWidget(card_title)
         card_layout.addSpacing(10)
         card_layout.addWidget(card_info)
         card_layout.addStretch()
 
         return preview_card
+
+    # =====================================================
+    # CLEAR PREVIEWS
+    # =====================================================
 
     def clear_previews(self):
 
@@ -282,6 +381,10 @@ class MainWindow(QMainWindow):
 
             if widget is not None:
                 widget.deleteLater()
+
+    # =====================================================
+    # IMPORT EXCEL
+    # =====================================================
 
     def import_excel(self):
 
@@ -297,11 +400,31 @@ class MainWindow(QMainWindow):
 
         try:
 
+            # =========================
+            # READ EXCEL
+            # =========================
+
             self.df = ExcelImporter.read_excel(
                 file_path
             )
 
-            total_rows = len(self.df)
+            # =========================
+            # NORMALIZE DATA
+            # =========================
+
+            self.normalized_data = (
+                DataNormalizer.normalize(
+                    self.df
+                )
+            )
+
+            total_rows = len(
+                self.normalized_data
+            )
+
+            # =========================
+            # UPDATE SIDEBAR
+            # =========================
 
             self.file_name_label.setText(
                 f"Arquivo:\n{file_path}"
@@ -311,12 +434,28 @@ class MainWindow(QMainWindow):
                 f"Registros: {total_rows}"
             )
 
+            self.preview_count_label.setText(
+                f"Previews: {min(total_rows, 20)}"
+            )
+
+            # =========================
+            # UPDATE STATUSBAR
+            # =========================
+
             self.statusBar().showMessage(
                 f"Excel carregado com sucesso | "
                 f"{total_rows} registros"
             )
 
+            # =========================
+            # GENERATE PREVIEWS
+            # =========================
+
             self.generate_previews()
+
+            # =========================
+            # SUCCESS MESSAGE
+            # =========================
 
             QMessageBox.information(
                 self,
@@ -333,27 +472,35 @@ class MainWindow(QMainWindow):
                 str(error)
             )
 
+            self.statusBar().showMessage(
+                "Erro ao importar Excel"
+            )
+
+    # =====================================================
+    # GENERATE PREVIEWS
+    # =====================================================
+
     def generate_previews(self):
 
         self.clear_previews()
 
-        if self.df is None:
+        if not self.normalized_data:
             return
 
-        for index, row in self.df.head(20).iterrows():
-
-            material = str(
-                row.iloc[0]
-            ) if len(row) > 0 else "N/A"
-
-            quantity = str(
-                row.iloc[1]
-            ) if len(row) > 1 else "N/A"
+        for index, item in enumerate(
+            self.normalized_data[:20]
+        ):
 
             preview_card = self.create_preview_card(
                 title=f"Etiqueta {index + 1}",
-                material=material,
-                quantity=quantity
+                material=item.get(
+                    "material_code",
+                    "N/A"
+                ),
+                quantity=item.get(
+                    "quantity",
+                    "N/A"
+                )
             )
 
             self.scroll_layout.addWidget(
